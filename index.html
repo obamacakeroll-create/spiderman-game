@@ -1,0 +1,57 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Spider-Men: Juma Brothers</title>
+<link rel="stylesheet" href="./src/ui/styles.css" />
+</head>
+<body>
+<div id="app"></div>
+<div id="hud" class="hidden">
+  <div id="letterbox-top"></div><div id="letterbox-bot"></div>
+  <div id="vitals">
+    <div id="hero-portrait"><span id="hero-name">ALI JUMA</span><span id="hero-title">VOLT WEAVER</span></div>
+    <div class="bar"><div id="hp-fill"></div><div id="hp-ghost"></div></div>
+    <div class="bar focus"><div id="focus-fill"></div><div class="ticks"></div></div>
+    <div id="abilities"></div>
+    <div id="level-line"><span id="lvl">LV 1</span><div class="xpbar"><div id="xp-fill"></div></div><span id="sp-count"></span></div>
+  </div>
+  <div id="objective"><div id="obj-mission"></div><div id="obj-text"></div><div id="obj-dist"></div></div>
+  <canvas id="minimap" width="220" height="220"></canvas>
+  <div id="combo"><span id="combo-n">0</span><span>HITS</span></div>
+  <div id="style-pop"></div>
+  <div id="notify"></div>
+  <div id="subtitle"><span id="sub-name"></span><span id="sub-text"></span></div>
+  <div id="prompt"></div>
+  <div id="crosshair"></div>
+  <div id="speedo"></div>
+  <div id="boss"><div id="boss-name"></div><div class="bar boss"><div id="boss-fill"></div></div></div>
+  <div id="switch-hint">TAB · SWITCH</div>
+  <div id="flash"></div>
+  <div id="marker-layer"></div>
+</div>
+<div id="title" class="screen">
+  <div class="title-wrap">
+    <div class="logo"><span class="s1">SPIDER-MEN</span><span class="s2">JUMA BROTHERS</span></div>
+    <div class="tag">Two brothers. One city. One hunger.</div>
+    <div class="menu">
+      <button id="btn-continue">CONTINUE</button>
+      <button id="btn-new">NEW GAME</button>
+      <button id="btn-free">FREE ROAM (ALL UNLOCKED)</button>
+      <button id="btn-controls">CONTROLS</button>
+    </div>
+    <div class="foot">Click to capture mouse · Best with headphones</div>
+  </div>
+</div>
+<div id="pause" class="screen hidden">
+  <div class="panel">
+    <div class="tabs"><button data-tab="map">MAP</button><button data-tab="skills">SKILLS</button><button data-tab="suits">SUITS</button><button data-tab="journal">JOURNAL</button><button data-tab="controls">CONTROLS</button></div>
+    <div id="tab-body"></div>
+    <div class="pause-foot"><button id="btn-resume">RESUME (ESC)</button><button id="btn-weather">TOGGLE RAIN</button><button id="btn-time">+3 HOURS</button></div>
+  </div>
+</div>
+<div id="loading" class="screen"><div class="spinner"></div><div>Building Manhattan…</div></div>
+<script type="module" src="./src/main.js"></script>
+</body>
+</html>
