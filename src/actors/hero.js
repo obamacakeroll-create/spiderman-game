@@ -62,6 +62,7 @@ export class Hero {
     if (!a) return false;
     this.anchor = a; this.ropeLen = this.pos.distanceTo(a) * 0.92;
     this.state = venom ? 'pull' : 'swing'; this.stateT = 0; this.swingT = 0;
+    if (!this.ai || this.pos.distanceTo(G.player.pos) < 80) G.fx?.burst(a, 10, venom ? 0x201830 : 0xffffff, 3, 0.35, 0.12, 4);
     if (sp < 12) this.vel.addScaledVector(fwd, 8);
     G.audio?.thwip(this.pos);
     return true;
@@ -338,6 +339,10 @@ export class Hero {
     if (this.dead) pose = Poses.down();
     r.pose(pose, dt, rate); r.tick(this.t);
     // body orientation from basis
+    // lean into turns (yaw rate) for weight and flow
+    let dy = this.yaw - (this.prevYaw ?? this.yaw); while (dy > Math.PI) dy -= Math.PI * 2; while (dy < -Math.PI) dy += Math.PI * 2;
+    this.prevYaw = this.yaw; this.lean = THREE.MathUtils.damp(this.lean || 0, THREE.MathUtils.clamp(-dy / Math.max(dt, 1e-3) * 0.06 * Math.min(1, this.speed / 12), -0.55, 0.55), 6, dt);
+    if (this.state === 'ground' || this.state === 'air' || this.state === 'swing') U.applyAxisAngle(F.clone().normalize(), this.lean);
     const Fn = F.clone().addScaledVector(U, -F.dot(U)).normalize();
     if (Fn.lengthSq() < 0.5) Fn.set(Math.sin(this.yaw), 0, Math.cos(this.yaw));
     const X = new THREE.Vector3().crossVectors(U, Fn).normalize();

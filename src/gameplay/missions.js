@@ -8,17 +8,19 @@ export class Missions {
   start(idx, stepIdx = 0) {
     const G = this.G; this.cleanup();
     if (idx >= this.list.length) { this.current = null; G.hud.objective('FREE ROAM', 'Stop crimes, clear bases, find Juma Memories'); return; }
-    this.current = this.list[idx]; G.progress.s.mission = idx;
+    this.current = this.list[idx]; this.replaying = idx < G.progress.s.mission; if (!this.replaying) G.progress.s.mission = idx;
     if (this.current.time !== undefined && stepIdx === 0) G.sky.time = this.current.time;
     G.sky.weather = this.current.weather || 'clear';
     if (stepIdx === 0) G.hud.notify(`MISSION ${idx + 1}: ${this.current.title.toUpperCase()}`, true);
+    // resuming mid-mission: make sure the right hero is in control
+    if (stepIdx > 0) { const forced = this.current.steps.slice(0, stepIdx).filter(x => x.type === 'playAs' || x.type === 'switchPrompt').map(x => x.hero || x.to).pop() || this.current.hero; if (forced && G.player.id !== forced) G.switchTo(forced, true); }
     this.enter(stepIdx);
   }
   cleanup() { const G = this.G; G.combat.clear('m'); G.hud.clearMarkers('m-'); G.hud.boss(null); if (this.chaser) { G.scene.remove(this.chaser.root); this.chaser = null; } document.body.classList.remove('cine'); G.cinematic = false; G.camRig.cine = null; }
   enter(i) {
     const G = this.G; this.si = i; const s = this.step = this.current.steps[i]; this.st = { t: 0 };
     if (!s) { this.complete(); return; }
-    if (s.checkpoint) { G.progress.s.step = i; G.progress.save(); this.checkpointPos = G.player.pos.clone(); }
+    if (s.checkpoint) { if (!this.replaying) { G.progress.s.step = i; G.progress.save(); } this.checkpointPos = G.player.pos.clone(); }
     G.hud.objective(this.current.title.toUpperCase(), s.text || '');
     switch (s.type) {
       case 'say': {
@@ -61,12 +63,13 @@ export class Missions {
   next() { this.G.hud.clearMarkers('m-'); this.enter(this.si + 1); }
   complete() {
     const G = this.G; const idx = this.list.indexOf(this.current);
-    G.progress.addXP(400 + idx * 100); G.progress.s.mission = idx + 1; G.progress.s.step = 0; G.progress.save();
+    G.progress.addXP(this.replaying ? 150 : 400 + idx * 100); if (!this.replaying) { G.progress.s.mission = idx + 1; G.progress.s.step = 0; } G.progress.save();
     G.hud.notify(`MISSION COMPLETE: ${this.current.title.toUpperCase()}  +${400 + idx * 100} XP`, true); G.audio.chime();
     this.cleanup(); this.current = null;
     // brief breather before the next mission
     const nextIdx = idx + 1;
-    if (nextIdx < this.list.length) { G.hud.objective('NEXT: ' + this.list[nextIdx].title.toUpperCase(), 'Free roam — press ENTER to start the next mission'); this.pendingNext = nextIdx; }
+    if (this.replaying) { G.hud.objective('REPLAY COMPLETE', 'Back to free roam'); }
+    else if (nextIdx < this.list.length) { G.hud.objective('NEXT: ' + this.list[nextIdx].title.toUpperCase(), 'Free roam — press ENTER to start the next mission'); this.pendingNext = nextIdx; }
     else { G.hud.objective('FREE ROAM', 'Press V for Venom · crimes, bases, challenges await'); G.switchTo('ali', true); }
   }
   restartStep() {

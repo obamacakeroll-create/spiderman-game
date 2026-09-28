@@ -152,7 +152,8 @@ export class HUD {
       <b>Crimes stopped</b><span>${s.crimes}</span>
       <b>Enemy bases cleared</b><span>${s.bases.length} / ${G.activities.bases.length}</span>
       <b>Challenges</b><span>${G.activities.challenges.map(c => `${c.name}: ${s.challenges[c.id] ? s.challenges[c.id].toFixed(1) + 's' : '—'}`).join(' · ')}</span></div>
-      <h3 style="margin-top:20px">Campaign</h3>${m.list.map((x, i) => `<div style="opacity:${i <= s.mission ? 1 : .4}">${i < s.mission ? '✓' : i === s.mission ? '▶' : '·'} ${i + 1}. <b>${x.title}</b> — ${x.desc}</div>`).join('')}`;
+      <h3 style="margin-top:20px">Campaign</h3>${m.list.map((x, i) => `<div style="opacity:${i <= s.mission ? 1 : .4};margin:4px 0">${i < s.mission ? '✓' : i === s.mission ? '▶' : '·'} ${i + 1}. <b>${x.title}</b> — ${x.desc}${i < s.mission || s.freeRoam ? `<button class="replay" data-i="${i}">REPLAY</button>` : ''}</div>`).join('')}`;
+      body.querySelectorAll('.replay').forEach(b => b.onclick = () => { G.hud.closePause(); G.resume(); m.start(+b.dataset.i); });
     } else if (tab === 'controls') {
       body.innerHTML = CONTROLS_HTML;
     } else if (tab === 'settings') {

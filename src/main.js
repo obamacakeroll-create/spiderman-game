@@ -216,6 +216,7 @@ $('btn-resume').onclick = () => resume();
 $('btn-weather').onclick = () => { G.sky.weather = G.sky.weather === 'rain' ? 'clear' : 'rain'; G.sky.weatherTimer = 200; };
 $('btn-time').onclick = () => { G.sky.time = (G.sky.time + 3) % 24; };
 G.renderSettings = (el, tab) => renderSettings(el, G.settings, tab);
+G.resume = () => resume();
 function pause() { if (state !== 'play') return; state = 'pause'; G.hud.openPause('map'); }
 function resume() {
   if (state === 'title') { $('pause').classList.add('hidden'); $('pause').classList.remove('from-title'); return; }
@@ -228,9 +229,15 @@ addEventListener('resize', () => { camera.aspect = innerWidth / innerHeight; cam
 // ---------- main loop
 const clock = new THREE.Clock();
 let titleT = 0, fpsT = 0, frames = 0, steamT = 0;
+let noRender = false;
+G.__tick = (n = 1, dt = 1 / 30) => { noRender = true; for (let i = 0; i < n; i++) step(dt, dt); noRender = false; };
 function frame() {
   requestAnimationFrame(frame);
   const real = Math.min(clock.getDelta(), 0.25), raw = Math.min(real, 0.05);
+  step(real, raw);
+}
+function render() { if (!noRender) G.post.composer.render(); }
+function step(real, raw) {
   const inp = G.input; inp.pollPad();
   frames++; fpsT += real; if (fpsT > 0.5) { window.__fps = frames / fpsT; $('fps').textContent = Math.round(window.__fps) + ' FPS'; frames = 0; fpsT = 0; }
   if (state === 'title' || state === 'loading') {
@@ -240,7 +247,7 @@ function frame() {
     camera.fov = 55; camera.updateProjectionMatrix();
     G.sky.camPos = camera.position; G.sky.update(0, camera.position); G.city.update(performance.now() / 1000, G.sky.night, G.sky.rainAmt);
     G.rivers.update(raw, G.sky.sunDir, G.sky.sun.color);
-    G.traffic.update(raw, camera.position, null, G.city.signalPhase); G.post.u.letterbox.value = 0; G.post.composer.render(); inp.endFrame(); return;
+    G.traffic.update(raw, camera.position, null, G.city.signalPhase); G.post.u.letterbox.value = 0; render(); inp.endFrame(); return;
   }
   if (state === 'pause') { if (inp.hit('Escape')) resume(); inp.endFrame(); return; }
   if (inp.hit('KeyP') && !G.switching && !G.cinematic) togglePhoto();
@@ -250,7 +257,7 @@ function frame() {
     if (inp.hit('KeyF')) { photo.filter = (photo.filter + 1) % FILTERS.length; G.post.u.filterMode.value = photo.filter; photoHint(); }
     if (inp.hit('KeyH')) $('photo-hint').classList.toggle('hidden');
     if (inp.hit('Escape')) togglePhoto();
-    G.camRig.update(0, G.player, real); G.sky.camPos = camera.position; G.sky.update(0, G.player.pos); G.post.composer.render(); inp.endFrame(); return;
+    G.camRig.update(0, G.player, real); G.sky.camPos = camera.position; G.sky.update(0, G.player.pos); render(); inp.endFrame(); return;
   }
   const dt = G.time.step(raw);
   if (inp.hit('Escape')) { G.input.unlock(); pause(); }
@@ -285,7 +292,7 @@ function frame() {
   u.letterbox.value = 0; u.slowmo.value = THREE.MathUtils.damp(u.slowmo.value, G.time.scale < 0.6 ? 1 : 0, 10, raw);
   G.audio.setWind(P.speed);
   G.hud.update(raw, P);
-  G.post.composer.render();
+  render();
   inp.endFrame();
 }
 const NULL_INPUT = { down: () => false, hit: () => false, up: () => false, moveAxis: () => ({ x: 0, y: 0 }) };
