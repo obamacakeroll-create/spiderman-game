@@ -22,9 +22,10 @@ const G = window.G = {};
 
 // ---------- renderer / scene
 const renderer = new THREE.WebGLRenderer({ antialias: false, powerPreference: 'high-performance' });
-renderer.setPixelRatio(Math.min(devicePixelRatio, 1.5));
+const LOW = location.search.includes('low');
+renderer.setPixelRatio(LOW ? 0.5 : Math.min(devicePixelRatio, 1.5));
 renderer.setSize(innerWidth, innerHeight);
-renderer.shadowMap.enabled = true; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.shadowMap.enabled = !LOW; renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.9;
 $('app').appendChild(renderer.domElement);
 const scene = new THREE.Scene();
@@ -66,6 +67,10 @@ function init() {
   G.majed.teleport(start.clone().add(new THREE.Vector3(60, 20, 40)));
   G.venom.setVisible(false);
   G.camRig.target.copy(G.ali.pos);
+  // pre-compile every material (incl. hidden Venom) to avoid hitches on first switch
+  G.venom.setVisible(true); G.venom.pos.copy(G.ali.pos); G.venom.animate(0.016, NULL_INPUT);
+  try { renderer.compile(scene, camera); } catch (e) { }
+  G.venom.setVisible(false);
 }
 
 G.say = (spk, text, dur = 3) => G.hud.say(spk, text, dur);
@@ -149,7 +154,7 @@ const clock = new THREE.Clock();
 let titleT = 0, fpsT = 0, frames = 0;
 function frame() {
   requestAnimationFrame(frame);
-  const raw = Math.min(clock.getDelta(), 0.05);
+  const real = Math.min(clock.getDelta(), 0.25), raw = Math.min(real, 0.05);
   const inp = G.input; inp.pollPad();
   if (state === 'title' || state === 'loading') {
     titleT += raw * 0.04;
@@ -179,7 +184,7 @@ function frame() {
   const cheer = G.crowd.update(dt, P.pos, danger, P.state === 'ground' && P.speed < 3);
   if (cheer > 3 && Math.random() < dt * 0.15) G.say('civ', ['It\'s Spider-Man!', 'Can I get a selfie?!', 'Juma brothers rule!', 'Thanks for saving my block!'][(Math.random() * 4) | 0], 2);
   G.sky.update(dt, P.pos); G.city.update(G.time.now, G.sky.night);
-  G.camRig.update(dt, P, raw);
+  G.camRig.update(dt, P, real);
   // speed streaks
   if (P.speed > 28) for (let i = 0; i < 3; i++) G.fx.emit(P.pos.clone().add(new THREE.Vector3((Math.random() - .5) * 14, (Math.random() - .5) * 8 + 2, (Math.random() - .5) * 14)).addScaledVector(P.vel, 0.25), new THREE.Vector3(), 0x9fb8d8, 0.3, 0.08, 0);
   if (P.buffs.overclock && Math.random() < 0.6) G.fx.emit(P.center, new THREE.Vector3((Math.random() - .5) * 2, 1, (Math.random() - .5) * 2), 0x40e8ff, 0.4, 0.2, 0);

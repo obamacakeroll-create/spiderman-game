@@ -62,10 +62,10 @@ body.cine #vitals, body.cine #minimap, body.cine #objective, body.cine #switch-h
 #loading { background: #05070a; flex-direction: column; gap: 16px; letter-spacing: 3px; }
 .spinner { width: 42px; height: 42px; border: 3px solid #222; border-top-color: #18e0ff; border-radius: 50%; animation: spin 1s linear infinite; } @keyframes spin { to { transform: rotate(360deg); } }
 #title { background: radial-gradient(ellipse at 30% 60%, rgba(0,0,0,0) 0%, rgba(0,0,0,.75) 70%); }
-.title-wrap { position: absolute; left: 7vw; top: 18vh; }
+.title-wrap { position: absolute; left: 7vw; top: 12vh; }
 .logo { display: flex; flex-direction: column; font-family: 'Bebas Neue', Impact; line-height: .85; }
-.logo .s1 { font-size: 110px; letter-spacing: 6px; background: linear-gradient(180deg, #fff, #9fdcff); -webkit-background-clip: text; color: transparent; filter: drop-shadow(0 0 20px rgba(24,224,255,.5)); }
-.logo .s2 { font-size: 52px; letter-spacing: 18px; color: #ff4a4a; filter: drop-shadow(0 0 16px rgba(255,60,60,.5)); }
+.logo .s1 { font-size: min(110px, 13vh); letter-spacing: 6px; background: linear-gradient(180deg, #fff, #9fdcff); -webkit-background-clip: text; color: transparent; filter: drop-shadow(0 0 20px rgba(24,224,255,.5)); }
+.logo .s2 { font-size: min(52px, 6vh); letter-spacing: 18px; color: #ff4a4a; filter: drop-shadow(0 0 16px rgba(255,60,60,.5)); }
 .tag { margin: 14px 0 30px; font-size: 20px; letter-spacing: 4px; opacity: .85; }
 .menu { display: flex; flex-direction: column; gap: 10px; align-items: flex-start; }
 button { font-family: 'Rajdhani'; font-weight: 700; font-size: 20px; letter-spacing: 3px; color: #fff; background: rgba(0,0,0,.45); border: 1px solid rgba(255,255,255,.25); padding: 10px 26px; cursor: pointer; transform: skewX(-12deg); transition: all .15s; pointer-events: auto; }

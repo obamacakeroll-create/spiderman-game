@@ -76,7 +76,7 @@ export class HUD {
       x = Math.min(Math.max(x, 40), innerWidth - 40); y = Math.min(Math.max(y, 60), innerHeight - 40);
       m.el.style.left = x + 'px'; m.el.style.top = y + 'px';
       m.el.querySelector('span').textContent = `${m.label || ''} ${Math.round(d)}m`;
-      m.el.style.opacity = d > 900 && m.cls !== 'mission' ? 0 : 1;
+      m.el.style.opacity = (d > 350 && m.cls !== 'mission' && m.cls !== 'crime') || (behind && m.cls !== 'mission') ? 0 : 1;
     }
     const pm = G.post.u; pm.damage.value = Math.max(0, pm.damage.value - dt * 1.8);
     this.drawMinimap(h);
