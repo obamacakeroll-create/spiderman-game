@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { Sky } from 'three/examples/jsm/objects/Sky.js';
+import { Clouds } from './atmosphere.js';
 
 // Day/night cycle, weather (rain), sun/moon light that follows the player for shadows.
 export class SkySystem {
@@ -36,11 +37,13 @@ export class SkySystem {
     const rg = new THREE.BufferGeometry(); rg.setAttribute('position', new THREE.BufferAttribute(rp, 3));
     this.rain = new THREE.LineSegments(rg, new THREE.LineBasicMaterial({ color: 0xaabbd0, transparent: true, opacity: 0 }));
     this.rain.frustumCulled = false; scene.add(this.rain);
+    this.clouds = new Clouds(scene);
+    this.flash = 0; this.nextBolt = 8; this.fogMul = 1; this.cloudsOn = true;
     this.update(0, new THREE.Vector3(), true);
   }
   setWeather(w) { this.weather = w; }
   update(dt, focus, forceEnv = false) {
-    this.time = (this.time + dt * this.speed) % 24;
+    this.time = (this.time + dt * this.speed) % 24; if (this.time < 0) this.time += 24;
     const h = this.time;
     const ang = (h - 6) / 24 * Math.PI * 2; // sunrise at 6
     const elev = Math.sin(ang), az = Math.cos(ang);
@@ -64,7 +67,14 @@ export class SkySystem {
     const fogDay = new THREE.Color(0xa9b9cc), fogDusk = new THREE.Color(0xd49a78), fogNight = new THREE.Color(0x0b1220), fogRain = new THREE.Color(0x6b7480);
     const dusk = Math.max(0, 1 - Math.abs(elev) * 5) * (1 - this.night);
     const fc = fogNight.clone().lerp(fogDay, day).lerp(fogDusk, dusk * 0.7).lerp(fogRain, this.rainAmt * 0.6 * day);
-    this.scene.fog.color.copy(fc); this.scene.fog.density = 0.0009 + this.rainAmt * 0.0016 + this.night * 0.0002;
+    this.scene.fog.color.copy(fc); this.scene.fog.density = (0.00055 + this.rainAmt * 0.0014 + this.night * 0.00015) / this.fogMul;
+    // clouds + lightning
+    this.clouds.mesh.visible = this.cloudsOn;
+    if (this.cloudsOn) this.clouds.update(dt, this.camPos || focus, this.sunDir, this.sun.color, fc, this.rainAmt, this.night);
+    this.flash = Math.max(0, this.flash - dt * 4);
+    if (this.rainAmt > 0.7) { this.nextBolt -= dt; if (this.nextBolt < 0) { this.nextBolt = 6 + Math.random() * 14; this.flash = 1; this.onThunder?.(); } }
+    this.hemi.intensity += this.flash * 3 * (Math.random() < 0.5 ? 1 : 0.4);
+    if (this.flash > 0) this.scene.fog.color.lerp(new THREE.Color(0.8, 0.85, 1), this.flash * 0.5);
     this.stars.material.opacity = this.night * (1 - this.rainAmt);
     this.stars.position.copy(focus);
     this.moon.position.copy(focus).addScaledVector(this.sunDir.clone().negate().setY(Math.abs(this.sunDir.y) * 0.8 + 0.3).normalize(), 3500);

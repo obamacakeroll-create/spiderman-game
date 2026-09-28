@@ -11,7 +11,7 @@ const GRAV = 30;
 export class Hero {
   constructor(G, id) {
     this.G = G; this.id = id; this.def = HERO_DEFS[id];
-    this.rig = new Rig({ scale: this.def.scale, bulk: this.def.bulk });
+    this.rig = new Rig({ scale: this.def.scale, bulk: this.def.bulk, ...this.def.body });
     this.suitId = this.def.suit; this.rig.dress(SUITS[this.suitId]);
     G.scene.add(this.rig.root);
     this.pos = new THREE.Vector3(); this.vel = new THREE.Vector3();
@@ -336,7 +336,7 @@ export class Hero {
     }
     if (this.hurtT > 0) { this.hurtT -= dt; pose = Poses.hurt(); }
     if (this.dead) pose = Poses.down();
-    r.pose(pose, dt, rate);
+    r.pose(pose, dt, rate); r.tick(this.t);
     // body orientation from basis
     const Fn = F.clone().addScaledVector(U, -F.dot(U)).normalize();
     if (Fn.lengthSq() < 0.5) Fn.set(Math.sin(this.yaw), 0, Math.cos(this.yaw));

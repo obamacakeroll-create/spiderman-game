@@ -9,6 +9,7 @@
     "preview": "vite preview --host"
   },
   "dependencies": {
+    "n8ao": "^2.0.1",
     "three": "^0.169.0"
   },
   "devDependencies": {

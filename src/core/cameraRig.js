@@ -8,8 +8,9 @@ export class CameraRig {
     this.shakeAmt = 0; this.fov = 65; this.roll = 0;
     this.cine = null; // {update(dt) -> {pos, look, fov}}
     this.lock = null; // combat focus point
+    this.baseFov = 64; this.shakeMul = 1; this.auto = true; this.photo = null;
   }
-  shake(a) { this.shakeAmt = Math.min(1.2, this.shakeAmt + a); }
+  shake(a) { this.shakeAmt = Math.min(1.2, this.shakeAmt + a * this.shakeMul); }
   input(dx, dy, sens = 0.0024) {
     this.yaw -= dx * sens; this.pitch -= dy * sens;
     this.pitch = THREE.MathUtils.clamp(this.pitch, -1.35, 1.0);
@@ -27,7 +28,7 @@ export class CameraRig {
     this.target.lerp(want, 1 - Math.exp(-(swinging ? 10 : 14) * rawDt));
     // auto-follow yaw behind velocity when moving fast and no mouse input recently
     this.idle = (this.idle || 0) + rawDt;
-    if (this.idle > 1.2 && sp > 12 && hero.state !== 'wall') {
+    if (this.auto && this.idle > 1.2 && sp > 12 && hero.state !== 'wall') {
       const vy = Math.atan2(-hero.vel.x, -hero.vel.z);
       let d = vy - this.yaw; while (d > Math.PI) d -= 2 * Math.PI; while (d < -Math.PI) d += 2 * Math.PI;
       this.yaw += d * (1 - Math.exp(-1.2 * rawDt));
@@ -56,7 +57,7 @@ export class CameraRig {
     const vdir = hero.vel.clone(); const lateral = vdir.dot(right);
     this.roll = THREE.MathUtils.damp(this.roll, swinging ? -lateral * 0.006 : 0, 3, rawDt);
     this.cam.rotateZ(this.roll);
-    const fov = 64 + Math.min(Math.max(sp - 10, 0), 50) * 0.45 + (hero.buffs.overclock ? 6 : 0);
+    const fov = this.baseFov + Math.min(Math.max(sp - 10, 0), 50) * 0.45 + (hero.buffs.overclock ? 6 : 0);
     this.cam.fov = THREE.MathUtils.damp(this.cam.fov, fov, 4, rawDt); this.cam.updateProjectionMatrix();
   }
 }

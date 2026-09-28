@@ -30,7 +30,11 @@
   <div id="switch-hint">TAB · SWITCH</div>
   <div id="flash"></div>
   <div id="marker-layer"></div>
+  <div id="bar-layer"></div>
+  <div id="hint-card"></div>
 </div>
+<div id="fps"></div>
+<div id="photo-hint"></div>
 <div id="title" class="screen">
   <div class="title-wrap">
     <div class="logo"><span class="s1">SPIDER-MEN</span><span class="s2">JUMA BROTHERS</span></div>
@@ -39,6 +43,7 @@
       <button id="btn-continue">CONTINUE</button>
       <button id="btn-new">NEW GAME</button>
       <button id="btn-free">FREE ROAM (ALL UNLOCKED)</button>
+      <button id="btn-settings">SETTINGS</button>
       <button id="btn-controls">CONTROLS</button>
     </div>
     <div class="foot">Click to capture mouse · Best with headphones</div>
@@ -46,12 +51,12 @@
 </div>
 <div id="pause" class="screen hidden">
   <div class="panel">
-    <div class="tabs"><button data-tab="map">MAP</button><button data-tab="skills">SKILLS</button><button data-tab="suits">SUITS</button><button data-tab="journal">JOURNAL</button><button data-tab="controls">CONTROLS</button></div>
+    <div class="tabs"><button data-tab="map">MAP</button><button data-tab="skills">SKILLS</button><button data-tab="suits">SUITS</button><button data-tab="journal">JOURNAL</button><button data-tab="settings">SETTINGS</button><button data-tab="controls">CONTROLS</button></div>
     <div id="tab-body"></div>
     <div class="pause-foot"><button id="btn-resume">RESUME (ESC)</button><button id="btn-weather">TOGGLE RAIN</button><button id="btn-time">+3 HOURS</button></div>
   </div>
 </div>
-<div id="loading" class="screen"><div class="spinner"></div><div>Building Manhattan…</div></div>
+<div id="loading" class="screen"><div class="load-logo">SPIDER-MEN <span>JUMA BROTHERS</span></div><div class="load-bar"><div id="load-fill"></div></div><div id="load-text">Loading…</div></div>
 <script type="module" src="./src/main.js"></script>
 </body>
 </html>

@@ -45,7 +45,7 @@ export class Missions {
       case 'playAs': G.switchTo(s.hero, true); break;
       case 'switchPrompt': break;
       case 'chase': {
-        const rig = new Rig({ scale: 1.4, bulk: 1.3 }); rig.dress(SUITS.venom); G.scene.add(rig.root);
+        const rig = new Rig({ scale: 1.42, bulk: 1.3, muscle: 1.4, waist: 0.72, head: 1.12, venom: true }); rig.dress(SUITS.venom); G.scene.add(rig.root);
         this.chaser = { root: rig.root, rig, p: s.path[0].clone(), seg: 0, hp: 5 };
         G.hud.setMarker('m-chase', this.chaser.p, 'mission', 'VENOM');
         break;

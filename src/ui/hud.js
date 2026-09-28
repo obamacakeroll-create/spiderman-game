@@ -18,7 +18,37 @@ export class HUD {
     for (const b of G.city.blocks) { g.fillStyle = b.type === 'park' ? '#27502c' : b.type === 'plaza' ? '#5a4a20' : '#4b525c'; g.fillRect((b.minX - this.mapOx) / S, (b.minZ - this.mapOz) / S, (b.maxX - b.minX) / S, (b.maxZ - b.minZ) / S); }
     for (const b of G.city.buildings) if (b.h > 120) { g.fillStyle = '#687280'; g.fillRect((b.minX - this.mapOx) / S, (b.minZ - this.mapOz) / S, (b.maxX - b.minX) / S, (b.maxZ - b.minZ) / S); }
     g.fillStyle = '#6a6258'; g.fillRect((520 - this.mapOx) / S, (LANDMARKS.bridge.z - 13 - this.mapOz) / S, 520 / S, 26 / S);
-    this.hpGhost = 1;
+    this.hpGhost = 1; this.subsOn = true; this.markerMode = 'all'; this.bars = []; this.dmgPool = [];
+  }
+  dmgNum(pos, n, crit) {
+    if (n < 1) return;
+    const v = pos.clone(); v.y += 0.6; v.project(this.G.camera); if (v.z > 1) return;
+    const el = this.dmgPool.pop() || document.createElement('div');
+    el.className = 'dmg' + (crit ? ' crit' : ''); el.textContent = n > 999 ? 'K.O.' : Math.round(n);
+    el.style.left = ((v.x + 1) / 2 * innerWidth + (Math.random() - .5) * 30) + 'px'; el.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
+    $('bar-layer').appendChild(el); setTimeout(() => { el.remove(); this.dmgPool.push(el); }, 800);
+  }
+  enemyBars() {
+    const G = this.G, cam = G.camera, v = new THREE.Vector3(); let n = 0;
+    for (const e of G.combat.enemies) {
+      if (!e.alive || e.a.boss || e.pos.distanceTo(G.player.pos) > 40) continue;
+      if (e.hp >= e.maxHp && e.state !== 'idle' && e.webbedT <= 0) continue;
+      v.copy(e.center); v.y += 1.1 * (e.a.scale || 1); v.project(cam); if (v.z > 1 || Math.abs(v.x) > 1.1 || Math.abs(v.y) > 1.1) continue;
+      let el = this.bars[n]; if (!el) { el = document.createElement('div'); el.className = 'ebar'; el.innerHTML = '<i></i>'; $('bar-layer').appendChild(el); this.bars.push(el); }
+      el.style.display = 'block'; el.style.left = ((v.x + 1) / 2 * innerWidth) + 'px'; el.style.top = ((1 - v.y) / 2 * innerHeight) + 'px';
+      el.firstChild.style.width = Math.max(0, e.hp / e.maxHp * 100) + '%';
+      el.className = 'ebar' + (e.webbedT > 0 ? ' webbed' : '') + (e.state === 'idle' ? ' unaware' : '');
+      n++;
+    }
+    for (let i = n; i < this.bars.length; i++) this.bars[i].style.display = 'none';
+  }
+  runHints() {
+    const hints = ['Hold <b>SHIFT</b> (or right mouse) in the air to <b>web swing</b>. Release at the bottom of the arc to fly.',
+      'Press <b>E</b> on a rooftop edge to <b>zip</b>, then <b>SPACE</b> to point-launch.', 'Hold <b>SPACE</b> while falling to glide with web wings. Hold <b>CTRL</b> to dive.',
+      '<b>LEFT MOUSE</b> attacks. Press <b>F</b> when Spider-Sense flashes over your head to <b>perfect dodge</b>.', 'Press <b>TAB</b> to switch between Ali and Majed. <b>P</b> opens photo mode, <b>ESC</b> the menu and settings.'];
+    let i = 0; const card = $('hint-card');
+    const next = () => { if (i >= hints.length) { card.classList.remove('show'); return; } card.innerHTML = hints[i++]; card.classList.add('show'); setTimeout(() => { card.classList.remove('show'); setTimeout(next, 900); }, 6500); };
+    setTimeout(next, 2500);
   }
   show(v) { $('hud').classList.toggle('hidden', !v); }
   setHero(h) {
@@ -62,7 +92,7 @@ export class HUD {
       const [sp, text, dur] = this.subQueue.shift(); this.subT = dur;
       const names = { ali: ['ALI', '#18e0ff'], majed: ['MAJED', '#ff5a5a'], venom: ['VENOM', '#b08cff'], warden: ['THE WARDEN', '#ffc040'], carapace: ['CARAPACE', '#ff8a30'], mj: ['MAYA (RADIO)', '#ffd34d'], news: ['J-NEWS', '#9fd3ff'], cop: ['CAPT. REYES', '#9ab0ff'], civ: ['CIVILIAN', '#ddd'], symbiote: ['???', '#b08cff'] };
       const n = names[sp] || [sp, '#fff'];
-      $('sub-name').textContent = n[0]; $('sub-text').textContent = text; $('subtitle').style.setProperty('--spk', n[1]); $('subtitle').classList.add('show');
+      $('sub-name').textContent = n[0]; $('sub-text').textContent = text; $('subtitle').style.setProperty('--spk', n[1]); if (this.subsOn) $('subtitle').classList.add('show');
       G.audio.voice(sp);
     }
     // markers
@@ -76,8 +106,11 @@ export class HUD {
       x = Math.min(Math.max(x, 40), innerWidth - 40); y = Math.min(Math.max(y, 60), innerHeight - 40);
       m.el.style.left = x + 'px'; m.el.style.top = y + 'px';
       m.el.querySelector('span').textContent = `${m.label || ''} ${Math.round(d)}m`;
+      const hideMode = this.markerMode === 'none' || (this.markerMode === 'mission' && m.cls !== 'mission');
+      m.el.style.display = hideMode ? 'none' : 'block';
       m.el.style.opacity = (d > 350 && m.cls !== 'mission' && m.cls !== 'crime') || (behind && m.cls !== 'mission') ? 0 : 1;
     }
+    this.enemyBars();
     const pm = G.post.u; pm.damage.value = Math.max(0, pm.damage.value - dt * 1.8);
     this.drawMinimap(h);
   }
@@ -122,6 +155,8 @@ export class HUD {
       <h3 style="margin-top:20px">Campaign</h3>${m.list.map((x, i) => `<div style="opacity:${i <= s.mission ? 1 : .4}">${i < s.mission ? '✓' : i === s.mission ? '▶' : '·'} ${i + 1}. <b>${x.title}</b> — ${x.desc}</div>`).join('')}`;
     } else if (tab === 'controls') {
       body.innerHTML = CONTROLS_HTML;
+    } else if (tab === 'settings') {
+      G.renderSettings(body, 'Graphics');
     } else {
       body.innerHTML = '<canvas id="mapcanvas"></canvas>';
       const c = $('mapcanvas'); c.width = c.clientWidth; c.height = c.clientHeight; const g = c.getContext('2d');

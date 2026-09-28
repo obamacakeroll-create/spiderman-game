@@ -96,7 +96,7 @@ export class Combat {
   damageHero(h, dmg, src, unblockable) {
     const G = this.G;
     if (h.invuln > 0 || h.dead || G.cinematic) return;
-    if (h.ai) dmg *= 0.35; // companions are sturdier
+    if (h.ai) dmg *= 0.35; else dmg *= G.diff || 1; // companions are sturdier
     if (h.buffs.guardian) { dmg *= 0.3; if (src && src.a.ranged) { src.hit(10, null, 'env', h); G.fx.sparks(h.center, 0xff6060); } }
     h.hp -= dmg; h.hurtT = 0.3; h.action = null; this.combo = 0;
     G.fx.sparks(h.center, 0xff4040); G.audio.punch(0.5); G.cam.shake(h.ai ? 0 : 0.35);

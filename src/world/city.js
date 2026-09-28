@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { facadeSet, groundTextures, billboardTexture, rng } from './textures.js';
+import { facadeSet, groundTextures, billboardTexture, rng, storefrontTextures, radialTexture, canvas, tex } from './textures.js';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 // Scaled-down Manhattan: avenues run north-south (Z), streets east-west (X). North is -Z.
@@ -61,13 +61,17 @@ export function buildCity(scene, col, envMapRef) {
   const styles = ['glass', 'darkglass', 'stone', 'brick', 'concrete', 'deco'];
   const sets = styles.map((s, i) => facadeSet(s, 100 + i * 17));
   const facadeMats = sets.map((s, i) => new THREE.MeshStandardMaterial({
-    map: s.map, roughnessMap: s.rm, metalnessMap: s.rm, roughness: 1, metalness: 1,
+    map: s.map, roughnessMap: s.rm, metalnessMap: s.rm, roughness: 1, metalness: 1, normalMap: s.nm, normalScale: new THREE.Vector2(1.3, 1.3),
     emissiveMap: s.em, emissive: new THREE.Color(1, 0.85, 0.65), emissiveIntensity: 0,
   }));
   const builders = styles.map(() => new GeoBuilder());
+  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s1 = new THREE.Vector3(1, 1, 1);
   const roofB = new GeoBuilder();
   const blocks = [], roofSpots = [], buildings = [];
-  const waterTowers = [], acUnits = [], spires = [];
+  const waterTowers = [], acUnits = [], spires = [], awnings = [], antennas = [];
+  const storeB = new GeoBuilder();
+  const crownCols = [0xfff1d6, 0x6fe3ff, 0xff5ab4, 0xffc24a, 0x9c7bff];
+  const crownB = crownCols.map(() => new GeoBuilder());
 
   const inRect = (x, z, R, m = 0) => x > R.minX - m && x < R.maxX + m && z > R.minZ - m && z < R.maxZ + m;
   const sidewalkB = new GeoBuilder();
@@ -101,6 +105,14 @@ export function buildCity(scene, col, envMapRef) {
       for (let t = 0; t < tiers; t++) {
         const top = tierH[t];
         b.box(tx0, y, tz0, tx1, top, tz1, roofB, uo, vo);
+        if (t === 0) {
+          storeB.box(tx0 - 0.06, 0.25, tz0 - 0.06, tx1 + 0.06, 4.6, tz1 + 0.06, null, r(), -0.0575, 32, 4.35);
+          roofB.box(tx0 - 0.4, 4.6, tz0 - 0.4, tx1 + 0.4, 5.1, tz1 + 0.4, roofB, 0, 0, 8, 8);
+          for (const side of [-1, 1]) for (let k = 0; k < 3; k++) if (r() < 0.45) {
+            const w = 3 + r() * 4, cx2 = tx0 + 2 + r() * Math.max(0.1, tx1 - tx0 - 4 - w) + w / 2;
+            awnings.push([cx2, side < 0 ? tz0 : tz1, w, side, (r() * 6) | 0]);
+          }
+        }
         // parapet ledge
         roofB.box(tx0 - 0.4, top, tz0 - 0.4, tx1 + 0.4, top + 0.8, tz1 + 0.4, null, 0, 0, 8, 8);
         col.add(tx0, y, tz0, tx1, top, tz1);
@@ -110,6 +122,9 @@ export function buildCity(scene, col, envMapRef) {
           roofSpots.push(new THREE.Vector3((tx0 + tx1) / 2, top, (tz0 + tz1) / 2));
           if (top < 70 && r() < 0.55) waterTowers.push([tx0 + 3 + r() * (w - 6), top, tz0 + 3 + r() * (d - 6)]);
           for (let k = 0; k < 2 + r() * 4; k++) acUnits.push([tx0 + 2 + r() * (w - 4), top, tz0 + 2 + r() * (d - 4), r() * 3]);
+          if (w > 10 && d > 10) { const bx = tx0 + 2 + r() * (w - 8), bz = tz0 + 2 + r() * (d - 7); roofB.box(bx, top, bz, bx + 3.5 + r() * 2, top + 3 + r() * 1.5, bz + 3.5, roofB, 0, 0, 8, 8); col.add(bx, top, bz, bx + 3.5, top + 3, bz + 3.5, 'prop'); }
+          if (top > 60 && r() < 0.35) antennas.push([tx0 + w * (0.2 + r() * 0.6), top, tz0 + d * (0.2 + r() * 0.6), 6 + r() * 14]);
+          if (top > 95) { const cb = crownB[(r() * crownB.length) | 0]; cb.box(tx0 - 0.08, top - 3.2, tz0 - 0.08, tx1 + 0.08, top - 2.4, tz1 + 0.08, null); if (r() < 0.5) cb.box(tx0 - 0.08, top - 7.2, tz0 - 0.08, tx1 + 0.08, top - 6.8, tz1 + 0.08, null); }
           if (top > 120 && r() < 0.5 || special) spires.push([(tx0 + tx1) / 2, top, (tz0 + tz1) / 2, special === LANDMARKS.empire ? 60 : special === LANDMARKS.chrysler ? 45 : 15 + r() * 25, special === LANDMARKS.chrysler]);
         }
         y = top; const sx = w * 0.12, sz = d * 0.12;
@@ -124,13 +139,30 @@ export function buildCity(scene, col, envMapRef) {
   });
   const roofMat = new THREE.MeshStandardMaterial({ map: T.roof, roughness: 0.92, color: 0x9a9690 });
   const roofMesh = new THREE.Mesh(roofB.geometry(), roofMat); roofMesh.receiveShadow = true; roofMesh.castShadow = true; city.add(roofMesh);
+  const sf = storefrontTextures(77);
+  const storeMat = new THREE.MeshStandardMaterial({ map: sf.map, emissiveMap: sf.em, emissive: new THREE.Color(1, 0.9, 0.75), emissiveIntensity: 0.35, roughness: 0.25, metalness: 0.3 });
+  const storeMesh = new THREE.Mesh(storeB.geometry(), storeMat); storeMesh.receiveShadow = true; city.add(storeMesh);
+  const crownMats = crownCols.map(c => new THREE.MeshBasicMaterial({ color: c, toneMapped: false }));
+  crownB.forEach((cb, i) => { if (cb.pos.length) city.add(new THREE.Mesh(cb.geometry(), crownMats[i])); });
+  // awnings
+  const awnGeo = new THREE.BoxGeometry(1, 0.12, 1.6); awnGeo.translate(0, 0, 0.8);
+  const awnMat = new THREE.MeshStandardMaterial({ roughness: 0.7 });
+  const awn = new THREE.InstancedMesh(awnGeo, awnMat, Math.max(1, awnings.length));
+  const awnCols = [0x7a1d1d, 0x1d4a2a, 0x1d2f5a, 0x5a3a1d, 0x222222, 0x8a6a1d];
+  awnings.forEach(([x, z, w, side, ci], i) => { m4.compose(new THREE.Vector3(x, 4.1, z), q.setFromEuler(new THREE.Euler(0.28 * -side * 0 + 0.28, side < 0 ? Math.PI : 0, 0)), new THREE.Vector3(w, 1, 1)); awn.setMatrixAt(i, m4); awn.setColorAt(i, new THREE.Color(awnCols[ci])); });
+  awn.castShadow = true; city.add(awn);
+  const antGeo = mergeGeometries([new THREE.CylinderGeometry(0.08, 0.2, 1, 6).translate(0, 0.5, 0), new THREE.BoxGeometry(1.2, 0.05, 0.05).translate(0, 0.7, 0), new THREE.BoxGeometry(0.8, 0.05, 0.05).translate(0, 0.85, 0)]);
+  const ant = new THREE.InstancedMesh(antGeo, new THREE.MeshStandardMaterial({ color: 0x555a60, metalness: 0.8, roughness: 0.4 }), Math.max(1, antennas.length));
+  antennas.forEach(([x, y, z, h], i) => { m4.compose(new THREE.Vector3(x, y, z), q.identity(), new THREE.Vector3(1, h, 1)); ant.setMatrixAt(i, m4); });
+  city.add(ant);
   T.sidewalk.repeat.set(1, 1);
   const swMat = new THREE.MeshStandardMaterial({ map: T.sidewalk, roughness: 0.85 });
   const sw = new THREE.Mesh(sidewalkB.geometry(), swMat); sw.receiveShadow = true; city.add(sw);
 
   // Ground (asphalt) island
   T.asphalt.repeat.set(200, 200);
-  const groundMat = new THREE.MeshStandardMaterial({ map: T.asphalt, roughness: 0.9, metalness: 0.0 });
+  T.asphaltN.repeat.set(200, 200);
+  const groundMat = new THREE.MeshStandardMaterial({ map: T.asphalt, normalMap: T.asphaltN, normalScale: new THREE.Vector2(0.6, 0.6), roughness: 0.9, metalness: 0.0 });
   const ground = new THREE.Mesh(new THREE.PlaneGeometry(ISLAND.maxX - ISLAND.minX + 40, ISLAND.maxZ - ISLAND.minZ + 40), groundMat);
   ground.rotation.x = -Math.PI / 2; ground.position.set(0, 0, (ISLAND.minZ + ISLAND.maxZ) / 2); ground.receiveShadow = true; city.add(ground);
   // seawall
@@ -147,10 +179,13 @@ export function buildCity(scene, col, envMapRef) {
   const lineGeo = [];
   for (const x of AVES) { const g = new THREE.PlaneGeometry(0.5, ISLAND.maxZ - ISLAND.minZ); g.rotateX(-Math.PI / 2); g.translate(x, 0.02, (ISLAND.maxZ + ISLAND.minZ) / 2); lineGeo.push(g); }
   city.add(new THREE.Mesh(mergeGeometries(lineGeo), lineMat));
+  const dashGeo = []; const Lz = ISLAND.maxZ - ISLAND.minZ;
+  for (const x of AVES) for (const o of [-5, 5]) { const g = new THREE.PlaneGeometry(0.9, Lz); g.rotateX(-Math.PI / 2); g.translate(x + o, 0.021, (ISLAND.maxZ + ISLAND.minZ) / 2); dashGeo.push(g); }
+  T.dash.repeat.set(1, Lz / 9);
+  city.add(new THREE.Mesh(mergeGeometries(dashGeo), new THREE.MeshStandardMaterial({ map: T.dash, transparent: true, depthWrite: false, roughness: 0.6 })));
   const crossMat = new THREE.MeshStandardMaterial({ map: T.cross, transparent: true, roughness: 0.7, depthWrite: false });
   const crossGeo = new THREE.PlaneGeometry(AVE_W, 4); crossGeo.rotateX(-Math.PI / 2);
   const crossInst = new THREE.InstancedMesh(crossGeo, crossMat, AVES.length * STREETS.length * 2);
-  const m4 = new THREE.Matrix4(), q = new THREE.Quaternion(), s1 = new THREE.Vector3(1, 1, 1);
   let ci = 0;
   for (const x of AVES) for (const z of STREETS) {
     if (inRect(x, z, PARK, -4)) continue;
@@ -169,10 +204,13 @@ export function buildCity(scene, col, envMapRef) {
   lake.rotation.x = -Math.PI / 2; lake.scale.set(70, 45, 1); lake.position.set(-40, 0.08, -930); city.add(lake);
   // Trees
   const trunkGeo = new THREE.CylinderGeometry(0.25, 0.4, 5, 6); trunkGeo.translate(0, 2.5, 0);
-  const canopyGeo = new THREE.IcosahedronGeometry(3.2, 2);
-  { const p = canopyGeo.attributes.position; const rr = rng(9); for (let i = 0; i < p.count; i++) { const f = 0.8 + rr() * 0.45; p.setXYZ(i, p.getX(i) * f, p.getY(i) * f * 0.85, p.getZ(i) * f); } canopyGeo.computeVertexNormals(); canopyGeo.translate(0, 6.5, 0); }
+  const lobes = []; const rr = rng(9);
+  for (let k = 0; k < 7; k++) { const g = new THREE.IcosahedronGeometry(1.6 + rr() * 1.2, 2); const a = k / 7 * Math.PI * 2; g.translate(k === 0 ? 0 : Math.cos(a) * 1.9, 6.2 + (k === 0 ? 1.4 : rr() * 1.6), k === 0 ? 0 : Math.sin(a) * 1.9); lobes.push(g); }
+  const canopyGeo = mergeGeometries(lobes);
+  { const p = canopyGeo.attributes.position; for (let i = 0; i < p.count; i++) { const n = Math.sin(p.getX(i) * 3.1) * Math.cos(p.getZ(i) * 2.7) * Math.sin(p.getY(i) * 2.3) * 0.35; p.setXYZ(i, p.getX(i) * (1 + n * 0.3), p.getY(i) + n * 0.4, p.getZ(i) * (1 + n * 0.3)); } canopyGeo.computeVertexNormals(); }
+  { const p = canopyGeo.attributes.position, cA = new Float32Array(p.count * 3); for (let i = 0; i < p.count; i++) { const v = THREE.MathUtils.clamp((p.getY(i) - 4.5) / 4, 0.35, 1); cA.set([v, v, v], i * 3); } canopyGeo.setAttribute('color', new THREE.BufferAttribute(cA, 3)); }
   const trunkMat = new THREE.MeshStandardMaterial({ color: 0x4a3526, roughness: 1 });
-  const leafMat = new THREE.MeshStandardMaterial({ color: 0x4d7a32, roughness: 0.9, flatShading: false });
+  const leafMat = new THREE.MeshStandardMaterial({ color: 0x5d8a3a, roughness: 0.85, vertexColors: true });
   const treePos = [];
   for (let k = 0; k < 520; k++) {
     const x = PARK.minX + 6 + r() * (PARK.maxX - PARK.minX - 12), z = PARK.minZ + 6 + r() * (PARK.maxZ - PARK.minZ - 12);
@@ -261,6 +299,43 @@ export function buildCity(scene, col, envMapRef) {
   lampPts.forEach(([x, z, a], i) => { m4.compose(new THREE.Vector3(x, 0.25, z), q.setFromEuler(new THREE.Euler(0, a, 0)), s1); lamps.setMatrixAt(i, m4); heads.setMatrixAt(i, m4); });
   city.add(lamps, heads);
 
+  // Light pools under street lamps (additive decals)
+  const poolGeo = new THREE.PlaneGeometry(14, 14); poolGeo.rotateX(-Math.PI / 2);
+  const poolMat = new THREE.MeshBasicMaterial({ map: radialTexture(), transparent: true, blending: THREE.AdditiveBlending, depthWrite: false, opacity: 0, toneMapped: false, fog: true });
+  const pools = new THREE.InstancedMesh(poolGeo, poolMat, lampPts.length);
+  lampPts.forEach(([x, z, a], i) => { m4.compose(new THREE.Vector3(x + Math.cos(a) * 2.2, 0.06, z - Math.sin(a) * 2.2), q.identity(), s1); pools.setMatrixAt(i, m4); });
+  pools.renderOrder = 2; city.add(pools);
+  // Traffic signals at intersections
+  const sigGeo = mergeGeometries([new THREE.CylinderGeometry(0.12, 0.15, 6, 8).translate(0, 3, 0), new THREE.BoxGeometry(0.12, 0.12, 7).translate(0, 5.8, -3.5), new THREE.BoxGeometry(0.45, 1.2, 0.4).translate(0, 5.2, -6.5)]);
+  const sigMat = new THREE.MeshStandardMaterial({ color: 0x2a2e2a, metalness: 0.6, roughness: 0.5 });
+  const sigPts = [];
+  for (let i = 1; i < AVES.length - 1; i++) for (let j = 1; j < STREETS.length - 1; j++) { const x = AVES[i], z = STREETS[j]; if (inRect(x, z, PARK, 10)) continue; sigPts.push([x, z]); }
+  const sig = new THREE.InstancedMesh(sigGeo, sigMat, sigPts.length * 2);
+  const lampGeo2 = new THREE.SphereGeometry(0.16, 8, 6);
+  const sigLights = new THREE.InstancedMesh(lampGeo2, new THREE.MeshBasicMaterial({ toneMapped: false }), sigPts.length * 2);
+  sigPts.forEach(([x, z], i) => {
+    const head = new THREE.Vector3(0, 5.45, -6.5 + 0.25);
+    m4.compose(new THREE.Vector3(x + AVE_W / 2 + 0.8, 0.25, z + ST_W / 2 + 0.8), q.setFromEuler(new THREE.Euler(0, Math.PI / 2, 0)), s1); sig.setMatrixAt(i * 2, m4);
+    m4.compose(head.clone().applyMatrix4(m4), q.identity(), s1); sigLights.setMatrixAt(i * 2 + 1, m4);
+    m4.compose(new THREE.Vector3(x - AVE_W / 2 - 0.8, 0.25, z - ST_W / 2 - 0.8), q.setFromEuler(new THREE.Euler(0, Math.PI, 0)), s1); sig.setMatrixAt(i * 2 + 1, m4);
+    m4.compose(head.clone().applyMatrix4(m4), q.identity(), s1); sigLights.setMatrixAt(i * 2, m4);
+  });
+  city.add(sig, sigLights);
+  const cRed = new THREE.Color(3, 0.15, 0.1), cGreen = new THREE.Color(0.2, 3, 0.8), cYellow = new THREE.Color(3, 1.8, 0.1);
+  let lastPhase = -1;
+  const setSignals = (phase) => { // phase 0 ave green,1 ave yellow,2 street green,3 street yellow
+    const ave = phase === 0 ? cGreen : phase === 1 ? cYellow : cRed, st = phase === 2 ? cGreen : phase === 3 ? cYellow : cRed;
+    for (let i = 0; i < sigPts.length; i++) { sigLights.setColorAt(i * 2, st); sigLights.setColorAt(i * 2 + 1, ave); }
+    sigLights.instanceColor.needsUpdate = true;
+  };
+  // Steam vents (NYC street stacks)
+  const steamVents = [];
+  const ventTex = (() => { const [c, g] = canvas(32, 128); for (let y = 0; y < 128; y += 32) { g.fillStyle = '#e8641c'; g.fillRect(0, y, 32, 16); g.fillStyle = '#f2f2f2'; g.fillRect(0, y + 16, 32, 16); } return tex(c); })();
+  const ventGeo = new THREE.CylinderGeometry(0.45, 0.55, 2.6, 16, 1, true); ventGeo.translate(0, 1.3, 0);
+  const vent = new THREE.InstancedMesh(ventGeo, new THREE.MeshStandardMaterial({ map: ventTex, roughness: 0.6, side: THREE.DoubleSide }), 60);
+  for (let k = 0; k < 60; k++) { const x = AVES[1 + ((r() * (AVES.length - 2)) | 0)] + (r() < 0.5 ? -2 : 2), z = STREETS[1 + ((r() * (STREETS.length - 2)) | 0)] + 8 + r() * 20; if (inRect(x, z, PARK, 8)) continue; steamVents.push(new THREE.Vector3(x, 2.6, z)); m4.compose(new THREE.Vector3(x, 0, z), q.identity(), s1); vent.setMatrixAt(steamVents.length - 1, m4); }
+  vent.count = steamVents.length; city.add(vent);
+
   // Bridge (east, downtown)
   const bridge = new THREE.Group();
   const deckMat = new THREE.MeshStandardMaterial({ color: 0x5d5a55, roughness: 0.8 });
@@ -291,6 +366,11 @@ export function buildCity(scene, col, envMapRef) {
     const vg = new THREE.BufferGeometry(); vg.setAttribute('position', new THREE.Float32BufferAttribute(vert, 3));
     bridge.add(new THREE.LineSegments(vg, new THREE.LineBasicMaterial({ color: 0x777777 })));
   }
+  const bl = [];
+  for (const pts of cablePts) for (let k = 0; k < pts.length; k += 2) bl.push(pts[k]);
+  const bLights = new THREE.InstancedMesh(new THREE.SphereGeometry(0.35, 8, 6), new THREE.MeshBasicMaterial({ color: 0xfff0c8, toneMapped: false }), bl.length);
+  bl.forEach((p, i) => { m4.compose(p, q.identity(), s1); bLights.setMatrixAt(i, m4); });
+  bridge.add(bLights);
   city.add(bridge);
 
   // Piers
@@ -302,10 +382,20 @@ export function buildCity(scene, col, envMapRef) {
 
   const nightMats = facadeMats;
   return {
-    group: city, blocks, buildings, roofSpots, billboards, waterMat, groundMat, headMat, nightMats, T,
-    update(t, night) {
-      for (const m of nightMats) m.emissiveIntensity = night * 1.6;
-      farMesh.material.emissiveIntensity = night * 1.6;
+    group: city, blocks, buildings, roofSpots, billboards, waterMat, groundMat, headMat, nightMats, T, river,
+    lampPools: pools, steamVents, signalPhase: 0, storeMat,
+    update(t, night, rain = 0) {
+      for (const m of nightMats) m.emissiveIntensity = night * 1.05;
+      storeMat.emissiveIntensity = 0.25 + night * 1.6;
+      crownMats.forEach((m, i) => m.color.set(crownCols[i]).multiplyScalar(0.15 + night * 2.2));
+      poolMat.opacity = night * 0.55;
+      bLights.material.color.setRGB(1, 0.94, 0.8).multiplyScalar(0.2 + night * 2.5);
+      groundMat.roughness = 0.9 - rain * 0.55; groundMat.color.setScalar(1 - rain * 0.35);
+      swMat.roughness = 0.85 - rain * 0.5;
+      const cyc = t % 30; const phase = cyc < 12 ? 0 : cyc < 15 ? 1 : cyc < 27 ? 2 : 3;
+      if (phase !== lastPhase) { lastPhase = phase; setSignals(phase); }
+      this.signalPhase = phase;
+
       headMat.emissiveIntensity = night * 6;
       T.waterN.offset.set(t * 0.004, t * 0.006);
       for (let i = 0; i < billboards.length; i++) billboards[i].material.color.setScalar(1.2 + Math.sin(t * 2 + i) * 0.3);

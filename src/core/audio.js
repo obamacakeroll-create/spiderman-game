@@ -1,6 +1,7 @@
 // Procedural WebAudio: web thwips, wind, impacts, voices (blips), adaptive music.
 export class Audio {
-  constructor() { this.ctx = null; this.intensity = 0; this.musicOn = true; }
+  constructor() { this.ctx = null; this.intensity = 0; this.musicOn = true; this.vol = { master: 0.8, music: 0.6, sfx: 0.9, voice: 0.7 }; }
+  setVolumes(v) { Object.assign(this.vol, v); if (!this.ctx) return; const t = this.now(); this.master.gain.setTargetAtTime(this.vol.master * 0.9, t, 0.05); this.mus.gain.setTargetAtTime(this.vol.music * 0.5, t, 0.05); this.sfx.gain.setTargetAtTime(this.vol.sfx, t, 0.05); }
   init() {
     if (this.ctx) return;
     const ctx = this.ctx = new (window.AudioContext || window.webkitAudioContext)();
@@ -20,7 +21,7 @@ export class Audio {
     const amb = ctx.createBufferSource(); amb.buffer = this.noise; amb.loop = true;
     const af = ctx.createBiquadFilter(); af.type = 'lowpass'; af.frequency.value = 180; this.ambG = ctx.createGain(); this.ambG.gain.value = 0.12;
     amb.connect(af).connect(this.ambG).connect(this.sfx); amb.start();
-    this.startMusic();
+    this.startMusic(); this.setVolumes({});
   }
   now() { return this.ctx.currentTime; }
   env(g, t, a, peak, dcy) { g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(peak, t + a); g.gain.exponentialRampToValueAtTime(0.0001, t + a + dcy); }
@@ -50,9 +51,12 @@ export class Audio {
   ui(k = 0) { this.tone(660 + k * 220, 0.08, 'triangle', 0.12); }
   chime() { [523, 659, 784, 1046].forEach((f, i) => setTimeout(() => this.tone(f, 0.35, 'triangle', 0.14), i * 70)); }
   voice(speaker) { // quick formant blips to accompany subtitles
-    if (!this.ctx) return; const base = speaker === 'venom' ? 70 : speaker === 'majed' ? 120 : speaker === 'ali' ? 170 : 200;
-    for (let i = 0; i < 4; i++) setTimeout(() => this.tone(base * (0.9 + Math.random() * 0.3), 0.07, speaker === 'venom' ? 'sawtooth' : 'triangle', 0.05), i * 70);
+    if (!this.ctx || this.vol.voice <= 0.01) return; const base = speaker === 'venom' ? 70 : speaker === 'majed' ? 120 : speaker === 'ali' ? 170 : 200;
+    for (let i = 0; i < 4; i++) setTimeout(() => this.tone(base * (0.9 + Math.random() * 0.3), 0.07, speaker === 'venom' ? 'sawtooth' : 'triangle', 0.07 * this.vol.voice), i * 70);
   }
+  honk() { this.tone(392, 0.25, 'square', 0.06); this.tone(330, 0.25, 'square', 0.05); }
+  thunder() { this.noiseHit(120, 0.4, 0.9, 2.6, 'lowpass', 40); setTimeout(() => this.noiseHit(90, 0.5, 0.6, 1.8, 'lowpass', 30), 300); }
+  step(a = 0.2) { this.noiseHit(900 + Math.random() * 400, 1.2, a * 0.25, 0.05, 'bandpass'); }
   setWind(speed) { if (!this.ctx) return; const a = Math.min(1, Math.max(0, (speed - 8) / 45)); this.windG.gain.setTargetAtTime(a * 0.5, this.now(), 0.1); this.windF.frequency.setTargetAtTime(300 + a * 1400, this.now(), 0.2); }
   startMusic() {
     const ctx = this.ctx; const bpm = 104, beat = 60 / bpm;

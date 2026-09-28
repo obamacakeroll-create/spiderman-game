@@ -5,12 +5,12 @@ import { dampAngle } from './hero.js';
 export const ARCHETYPES = {
   thug: { hp: 60, dmg: 9, speed: 6.5, range: 2.0, cd: [1.6, 3.2], windup: 0.55, scale: 1, bulk: 1.05, colors: { jacket: 0x3a3f4a, pants: 0x22252b, skin: 0x9a6f55, accent: 0x9c1b1b }, mask: true, xp: 20 },
   gunner: { hp: 45, dmg: 8, speed: 5.5, range: 26, cd: [2.2, 3.6], windup: 0.85, scale: 1, bulk: 1, colors: { jacket: 0x4a4232, pants: 0x2b2b25, skin: 0x7a5a45, accent: 0x111111 }, mask: true, ranged: true, xp: 25 },
-  brute: { hp: 240, dmg: 22, speed: 5, range: 2.8, cd: [2.5, 4], windup: 0.9, scale: 1.4, bulk: 1.4, colors: { jacket: 0x5a2020, pants: 0x1b1b1b, skin: 0x8a6048, accent: 0x333333 }, unblockable: true, xp: 60 },
+  brute: { hp: 240, dmg: 22, speed: 5, range: 2.8, cd: [2.5, 4], windup: 0.9, scale: 1.3, bulk: 1.35, muscle: 1.35, waist: 1.2, colors: { jacket: 0x5a2020, pants: 0x1b1b1b, skin: 0x8a6048, accent: 0x333333 }, unblockable: true, xp: 60 },
   shield: { hp: 90, dmg: 10, speed: 5.5, range: 2.2, cd: [2, 3.5], windup: 0.6, scale: 1.05, bulk: 1.15, colors: { jacket: 0x283850, pants: 0x1a1f28, skin: 0x8a6a55, accent: 0x6a7a90 }, mask: true, shield: true, xp: 35 },
   jetpack: { hp: 55, dmg: 8, speed: 8, range: 24, cd: [2, 3], windup: 0.8, scale: 1, bulk: 1, colors: { jacket: 0x2f3a2f, pants: 0x1f241f, skin: 0x8a6a55, accent: 0xff8a20 }, mask: true, ranged: true, flying: true, xp: 40 },
   symbiote: { hp: 85, dmg: 12, speed: 9, range: 2.2, cd: [1.2, 2.4], windup: 0.45, scale: 1.08, bulk: 1.1, colors: { jacket: 0x0a0a12, pants: 0x0a0a12, skin: 0x0a0a12, accent: 0xeeeeee }, regen: 6, xp: 45, symb: true },
-  carapace: { hp: 1100, dmg: 26, speed: 7, range: 3.4, cd: [1.4, 2.4], windup: 0.8, scale: 1.8, bulk: 1.5, colors: { jacket: 0xb85a14, pants: 0x1c1c1c, skin: 0x333333, accent: 0xd2742a }, armor: true, boss: 'CARAPACE', unblockable: true, xp: 500 },
-  venomBoss: { hp: 1500, dmg: 20, speed: 13, range: 3.2, cd: [0.9, 1.8], windup: 0.5, scale: 1.45, bulk: 1.35, suit: 'venom', boss: 'VENOM', xp: 800 },
+  carapace: { hp: 1100, dmg: 26, speed: 7, range: 3.4, cd: [1.4, 2.4], windup: 0.8, scale: 1.6, bulk: 1.4, muscle: 1.3, waist: 1.1, colors: { jacket: 0xb85a14, pants: 0x1c1c1c, skin: 0x333333, accent: 0xd2742a }, armor: true, boss: 'CARAPACE', unblockable: true, xp: 500 },
+  venomBoss: { hp: 1500, dmg: 20, speed: 13, range: 3.2, cd: [0.9, 1.8], windup: 0.5, scale: 1.42, bulk: 1.3, muscle: 1.4, waist: 0.72, suit: 'venom', boss: 'VENOM', xp: 800 },
   warden: { hp: 1800, dmg: 18, speed: 4, range: 40, cd: [1.6, 2.6], windup: 1.0, scale: 1, boss: 'THE WARDEN', mech: true, xp: 1000 },
 };
 
@@ -25,8 +25,8 @@ export class Enemy {
     this.cd = 1 + Math.random() * 2; this.alive = true; this.webHits = 0; this.webbedT = 0; this.stunT = 0;
     this.detect = 0; this.home = pos.clone(); this.tag = opts.tag;
     if (a.mech) this.buildMech(); else {
-      this.rig = new Rig({ scale: a.scale, bulk: a.bulk });
-      if (a.suit) this.rig.dress(SUITS[a.suit]); else this.rig.dress(null, { colors: a.colors, mask: a.mask, armor: a.armor });
+      this.rig = new Rig({ scale: a.scale, bulk: a.bulk, muscle: a.muscle || 1, waist: a.waist || 1, venom: a.suit === 'venom', head: a.suit === 'venom' ? 1.12 : 1 });
+      if (a.suit) this.rig.dress(SUITS[a.suit]); else this.rig.dress(null, { colors: a.colors, mask: a.mask, armor: a.armor, vest: a.shield || a.armor, symb: a.symb, gloves: !!a.mask, cap: !a.mask && !a.armor && !a.symb && Math.random() < 0.6 ? [0x222222, 0x8a1a1a, 0x1a2a55][this.id % 3] : null });
       if (a.shield) { const s = new THREE.Mesh(new THREE.CylinderGeometry(0.5, 0.5, 0.06, 20), new THREE.MeshStandardMaterial({ color: 0x8aa0b8, metalness: 0.8, roughness: 0.3, emissive: 0x203050 })); s.rotation.x = Math.PI / 2; s.position.set(0, -0.15, 0.1); this.rig.j.elL.add(s); this.shieldMesh = s; }
       if (a.flying) { const pack = new THREE.Mesh(new THREE.BoxGeometry(0.4, 0.5, 0.2), new THREE.MeshStandardMaterial({ color: 0x444, metalness: 0.8, roughness: 0.3 })); pack.position.set(0, 0.1, -0.2); this.rig.j.chest.add(pack); this.flame = new THREE.Mesh(new THREE.ConeGeometry(0.1, 0.6, 8), new THREE.MeshBasicMaterial({ color: 0xffa040, toneMapped: false })); this.flame.rotation.x = Math.PI; this.flame.position.set(0, -0.4, -0.2); this.rig.j.chest.add(this.flame); }
       if (a.ranged && !a.flying) { const gun = new THREE.Mesh(new THREE.BoxGeometry(0.06, 0.1, 0.5), new THREE.MeshStandardMaterial({ color: 0x111, metalness: 0.9, roughness: 0.3 })); gun.position.set(0, -0.25, 0.15); gun.rotation.x = -Math.PI / 2; this.rig.j.handR.add(gun); }
@@ -70,7 +70,8 @@ export class Enemy {
     if (a.shield && kind === 'light' && dir && Math.cos(this.yaw) * -dir.z + Math.sin(this.yaw) * -dir.x > 0.3 && this.state !== 'stagger' && this.webbedT <= 0) { mult = 0.15; this.G.fx.sparks(this.center, 0x9fc8ff); this.G.hud.style('BLOCKED — attack from behind or air', 0); }
     if (a.armor && this.stunT <= 0) mult *= 0.45;
     if (this.webbedT > 0) mult *= 1.5;
-    this.hp -= dmg * mult;
+    this.hp -= dmg * mult; this.flashT = 0.12;
+    if (kind !== 'env') this.G.hud?.dmgNum(this.center, dmg * mult, kind === 'heavy' || kind === 'finisher' || dmg * mult > 40);
     const kb = kind === 'heavy' ? 12 : kind === 'launch' ? 3 : kind === 'finisher' ? 18 : kind === 'slam' ? 4 : 4;
     if (!a.boss || this.stunT > 0) {
       if (dir) { this.vel.x = dir.x * kb * (a.boss ? 0.2 : 1); this.vel.z = dir.z * kb * (a.boss ? 0.2 : 1); }
@@ -252,7 +253,7 @@ export class Enemy {
       return;
     }
     if (pose === 'down') { pose = Poses.down(); this.rig.root.rotation.x = THREE.MathUtils.damp(this.rig.root.rotation.x, -Math.PI / 2, 8, dt); }
-    this.rig.pose(pose || Poses.idle(this.t), dt, this.state === 'windup' ? 8 : 14);
+    this.rig.pose(pose || Poses.idle(this.t), dt, this.state === 'windup' ? 8 : 14); this.flashT = Math.max(0, (this.flashT || 0) - dt); this.rig.flash(this.flashT * 8 + (this.state === 'windup' && this.unblockable ? 0.4 + Math.sin(this.t * 30) * 0.3 : 0)); this.rig.tick(this.t);
     this.rig.root.position.copy(this.pos);
     if (this.alive) { this.rig.root.rotation.set(this.a.flying ? 0.3 : 0, this.yaw, this.juggle > 0 && this.airborne ? Math.sin(this.t * 10) * 0.4 : 0); }
     else this.rig.root.rotation.y = this.yaw;

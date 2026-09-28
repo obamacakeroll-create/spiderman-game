@@ -89,3 +89,43 @@ button:hover { background: #18e0ff; color: #000; border-color: #18e0ff; box-shad
 .kv { display: grid; grid-template-columns: 220px 1fr; gap: 6px 16px; font-size: 17px; } .kv b { color: #ffd34d; }
 #mapcanvas { width: 100%; height: 100%; }
 .hint { opacity: .7; font-size: 14px; }
+/* --- v2 additions --- */
+:root { --hud-scale: 1; }
+#vitals { transform-origin: left bottom; transform: scale(var(--hud-scale)); }
+#minimap { transform-origin: right bottom; transform: scale(var(--hud-scale)); }
+#objective { transform-origin: right top; transform: scale(var(--hud-scale)); }
+#loading { background: radial-gradient(ellipse at center, #0c1520, #020306); }
+.load-logo { font-family: 'Bebas Neue', Impact, sans-serif; font-size: 64px; letter-spacing: 6px; color: #fff; text-shadow: 0 0 24px rgba(24,224,255,.5); }
+.load-logo span { color: #ff4a4a; font-size: 30px; letter-spacing: 12px; display: block; text-align: center; }
+.load-bar { width: min(420px, 70vw); height: 4px; background: rgba(255,255,255,.12); margin-top: 18px; overflow: hidden; }
+#load-fill { height: 100%; width: 0; background: linear-gradient(90deg, #18e0ff, #ff4a4a); transition: width .3s; }
+#load-text { margin-top: 10px; letter-spacing: 3px; opacity: .8; font-size: 14px; }
+#fps { position: fixed; left: 50%; top: 6px; transform: translateX(-50%); font: 700 12px monospace; color: #7dff8a; background: rgba(0,0,0,.4); padding: 2px 8px; z-index: 30; display: none; }
+#photo-hint { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); background: rgba(0,0,0,.55); padding: 8px 16px; letter-spacing: 1px; font-weight: 700; display: none; z-index: 30; }
+body.photo #photo-hint { display: block; } body.photo #photo-hint.hidden { display: none; }
+body.photo #hud { display: none; }
+#pause.from-title .pause-foot #btn-weather, #pause.from-title .pause-foot #btn-time, #pause.from-title .tabs button:not([data-tab=settings]):not([data-tab=controls]) { display: none; }
+.stabs { display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap; }
+.stab { font-size: 15px; padding: 7px 16px; }
+.stab.active { background: #18e0ff; color: #000; }
+.stab.reset { margin-left: auto; font-size: 13px; opacity: .8; }
+.setbody { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 28px; }
+.setrow { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 7px 10px; background: rgba(255,255,255,.03); border-left: 2px solid rgba(24,224,255,.35); font-size: 16px; font-weight: 600; }
+.setrow .ctl { display: flex; align-items: center; gap: 10px; }
+.setrow input[type=range] { width: 150px; accent-color: #18e0ff; pointer-events: auto; }
+.setrow .val { width: 48px; text-align: right; color: #18e0ff; font-size: 14px; }
+.setrow select { background: #0b1118; color: #fff; border: 1px solid rgba(255,255,255,.25); font: 600 15px Rajdhani, sans-serif; padding: 4px 8px; pointer-events: auto; }
+.tog, .bind { font-size: 14px; padding: 4px 14px; min-width: 70px; transform: none; }
+.tog.on { background: #18e0ff; color: #000; }
+.bind.listening { background: #ffd34d; color: #000; }
+.binds { display: contents; }
+.setbody > .hint { grid-column: 1 / -1; margin-bottom: 6px; }
+#bar-layer { position: absolute; inset: 0; }
+.ebar { position: absolute; width: 56px; height: 5px; transform: translate(-50%, -50%); background: rgba(0,0,0,.6); border: 1px solid rgba(255,255,255,.25); }
+.ebar i { display: block; height: 100%; background: linear-gradient(90deg, #ff4040, #ff8a60); }
+.ebar.webbed i { background: #e8e8e8; } .ebar.unaware { border-color: #7dd3ff; }
+.dmg { position: absolute; transform: translate(-50%, -50%); font: 800 18px Rajdhani, sans-serif; color: #fff; text-shadow: 0 2px 4px #000; animation: dmgUp .8s ease-out forwards; pointer-events: none; }
+.dmg.crit { color: #ffd34d; font-size: 26px; }
+@keyframes dmgUp { 0% { opacity: 0; margin-top: 0; transform: translate(-50%,-50%) scale(1.4); } 15% { opacity: 1; transform: translate(-50%,-50%) scale(1); } 100% { opacity: 0; margin-top: -46px; } }
+#hint-card { position: absolute; left: 50%; top: 14vh; transform: translateX(-50%); background: rgba(0,0,0,.6); border: 1px solid rgba(24,224,255,.5); padding: 10px 20px; font-size: 18px; font-weight: 700; letter-spacing: 1px; opacity: 0; transition: opacity .4s; text-align: center; }
+#hint-card.show { opacity: 1; } #hint-card b { color: #18e0ff; }

@@ -1,7 +1,7 @@
 // Hero definitions: identity, stats, abilities, skill trees.
 export const HERO_DEFS = {
   ali: {
-    id: 'ali', name: 'Ali Juma', title: 'Volt Weaver', color: '#18e0ff', traversal: 'web', suit: 'ali_volt', scale: 1, bulk: 0.95,
+    id: 'ali', name: 'Ali Juma', title: 'Volt Weaver', color: '#18e0ff', traversal: 'web', suit: 'ali_volt', scale: 1, bulk: 0.95, body: { muscle: 1.0, waist: 0.88, head: 1 },
     bio: 'Quick-witted, reckless, brilliant with tech. Channels bio-electric venom through his webs.',
     stats: { hp: 100, run: 10, sprint: 17, jump: 13, pump: 1.15, maxSwing: 58, dmg: 1.0, comboSpeed: 1.2, air: 1.2 },
     abilities: [
@@ -12,7 +12,7 @@ export const HERO_DEFS = {
     lines: { switchIn: ['Ali in. Let\'s make some noise!', 'My turn, big bro!', 'Volt Weaver, online.'], kill: ['Shocking, right?', 'Zap and nap!', 'That one\'s gonna leave a mark.'], trick: ['Wooo!', 'Ten out of ten!'] },
   },
   majed: {
-    id: 'majed', name: 'Majed Juma', title: 'Ironsilk', color: '#ff4a4a', traversal: 'web', suit: 'majed_iron', scale: 1.04, bulk: 1.12,
+    id: 'majed', name: 'Majed Juma', title: 'Ironsilk', color: '#ff4a4a', traversal: 'web', suit: 'majed_iron', scale: 1.04, bulk: 1.1, body: { muscle: 1.15, waist: 0.95, head: 1 },
     bio: 'The older brother. Methodical, protective, hits like a freight train. Reinforced silk and seismic gauntlets.',
     stats: { hp: 130, run: 9.5, sprint: 16, jump: 12, pump: 1.0, maxSwing: 54, dmg: 1.35, comboSpeed: 0.95, air: 1.0 },
     abilities: [
@@ -23,7 +23,7 @@ export const HERO_DEFS = {
     lines: { switchIn: ['Majed here. I\'ve got it.', 'Stay focused, Ali. I\'m taking over.', 'Ironsilk, moving in.'], kill: ['Stay down.', 'Should\'ve surrendered.', 'Next.'], trick: ['Not bad.', 'Still got it.'] },
   },
   venom: {
-    id: 'venom', name: 'Venom', title: 'The Hunger', color: '#b08cff', traversal: 'symbiote', suit: 'venom', scale: 1.42, bulk: 1.35,
+    id: 'venom', name: 'Venom', title: 'The Hunger', color: '#b08cff', traversal: 'symbiote', suit: 'venom', scale: 1.42, bulk: 1.3, body: { muscle: 1.4, waist: 0.72, head: 1.12, venom: true },
     bio: 'An alien symbiote bonded to Majed. Unstoppable, starving, and learning what it means to protect.',
     stats: { hp: 240, run: 11, sprint: 20, jump: 22, pump: 1.0, maxSwing: 62, dmg: 2.1, comboSpeed: 0.9, air: 0.8 },
     abilities: [

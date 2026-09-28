@@ -8,25 +8,39 @@ export class Input {
     this.locked = false;
     this.dom = dom;
     this.gamepad = null;
-    this.padPrev = {};
+    this.padPrev = {}; this.map = null; this.blocked = new Set();
     addEventListener('keydown', e => {
       if (e.code === 'Tab' || e.code === 'Space' || e.code.startsWith('Arrow')) e.preventDefault();
-      if (!this.keys.has(e.code)) this.pressed.add(e.code);
-      this.keys.add(e.code);
-    });
-    addEventListener('keyup', e => { this.keys.delete(e.code); this.released.add(e.code); });
-    addEventListener('mousedown', e => {
-      const c = 'Mouse' + e.button;
+      if (e.target && e.target.tagName === 'SELECT') return;
+      const c = this.tr(e.code); if (!c) return;
       if (!this.keys.has(c)) this.pressed.add(c);
       this.keys.add(c);
     });
-    addEventListener('mouseup', e => { const c = 'Mouse' + e.button; this.keys.delete(c); this.released.add(c); });
+    addEventListener('keyup', e => { const c = this.tr(e.code); if (!c) return; this.keys.delete(c); this.released.add(c); });
+    addEventListener('mousedown', e => {
+      const c = this.tr('Mouse' + e.button); if (!c) return;
+      if (!this.keys.has(c)) this.pressed.add(c);
+      this.keys.add(c);
+    });
+    addEventListener('mouseup', e => { const c = this.tr('Mouse' + e.button); if (!c) return; this.keys.delete(c); this.released.add(c); });
     addEventListener('contextmenu', e => e.preventDefault());
     addEventListener('mousemove', e => {
       if (this.locked) { this.mouseDX += e.movementX; this.mouseDY += e.movementY; }
     });
     document.addEventListener('pointerlockchange', () => { this.locked = document.pointerLockElement === dom; });
     addEventListener('blur', () => this.keys.clear());
+  }
+  // Key rebinding: physical code -> logical (default) code used by gameplay
+  setBinds(binds, actions) {
+    this.map = new Map(); this.blocked = new Set();
+    for (const [id, , def] of actions) { this.map.set(binds[id], def); if (binds[id] !== def) this.blocked.add(def); }
+    this.keys.clear();
+  }
+  tr(code) {
+    if (code === 'Mouse2' || code === 'Escape') return code;
+    if (this.map && this.map.has(code)) return this.map.get(code);
+    if (this.blocked.has(code)) return null;
+    return code;
   }
   lock() { if (!this.locked) this.dom.requestPointerLock?.(); }
   unlock() { if (document.pointerLockElement) document.exitPointerLock(); }
